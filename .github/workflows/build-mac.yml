@@ -1,0 +1,31 @@
+name: Build macOS App
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build .app bundle
+        run: pyinstaller --windowed --name "MyFirstGUI" tkinter_demo.py
+
+      - name: Create DMG
+        run: |
+          hdiutil create -volname "MyFirstGUI" -srcfolder dist/MyFirstGUI.app \
+            -ov -format UDZO dist/MyFirstGUI.dmg
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/MyFirstGUI.dmg
