@@ -9,28 +9,23 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - runner: macos-latest
-            arch: arm64
-            label: Apple-Silicon
-          - runner: macos-13
-            arch: x86_64
-            label: Intel
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Install universal2 Python
+        run: |
+          curl -L -o python.pkg "https://www.python.org/ftp/python/3.12.8/python-3.12.8-macos11.pkg"
+          sudo installer -pkg python.pkg -target /
+          /usr/local/bin/python3.12 -m pip install pyinstaller
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
-
-      - name: Build .app bundle
-        run: pyinstaller --windowed --name "MyFirstGUI" tkinter_demo.py
+      - name: Build universal .app bundle
+        run: |
+          /usr/local/bin/python3.12 -m PyInstaller \
+            --windowed \
+            --name "MyFirstGUI" \
+            --target-arch universal2 \
+            tkinter_demo.py
 
       - name: Verify architecture
         run: |
@@ -40,9 +35,9 @@ jobs:
       - name: Create DMG
         run: |
           hdiutil create -volname "MyFirstGUI" -srcfolder dist/MyFirstGUI.app \
-            -ov -format UDZO "dist/MyFirstGUI-${{ matrix.label }}.dmg"
+            -ov -format UDZO dist/MyFirstGUI.dmg
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "dist/MyFirstGUI-${{ matrix.label }}.dmg"
+          files: dist/MyFirstGUI.dmg
