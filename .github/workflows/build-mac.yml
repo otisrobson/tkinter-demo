@@ -9,7 +9,16 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+            label: Apple-Silicon
+          - runner: macos-13
+            arch: x86_64
+            label: Intel
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,12 +32,17 @@ jobs:
       - name: Build .app bundle
         run: pyinstaller --windowed --name "MyFirstGUI" tkinter_demo.py
 
+      - name: Verify architecture
+        run: |
+          file dist/MyFirstGUI.app/Contents/MacOS/MyFirstGUI
+          lipo -archs dist/MyFirstGUI.app/Contents/MacOS/MyFirstGUI
+
       - name: Create DMG
         run: |
           hdiutil create -volname "MyFirstGUI" -srcfolder dist/MyFirstGUI.app \
-            -ov -format UDZO dist/MyFirstGUI.dmg
+            -ov -format UDZO "dist/MyFirstGUI-${{ matrix.label }}.dmg"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/MyFirstGUI.dmg
+          files: "dist/MyFirstGUI-${{ matrix.label }}.dmg"
