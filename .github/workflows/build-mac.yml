@@ -32,6 +32,11 @@ jobs:
           file dist/MyFirstGUI.app/Contents/MacOS/MyFirstGUI
           lipo -archs dist/MyFirstGUI.app/Contents/MacOS/MyFirstGUI
 
+      - name: Test x86_64 via Rosetta
+        run: |
+          arch -x86_64 dist/MyFirstGUI.app/Contents/MacOS/MyFirstGUI &
+          sleep 3 && kill $!
+
       - name: Create DMG
         run: |
           hdiutil create -volname "MyFirstGUI" -srcfolder dist/MyFirstGUI.app \
